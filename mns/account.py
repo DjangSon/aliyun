@@ -16,7 +16,7 @@ from mns.mns_tool import MNSLogger
 
 
 class Account:
-    def __init__(self, host, access_id, access_key, security_token = "", debug=False, logger = None):
+    def __init__(self, host, access_id, access_key, security_token="", debug=False, logger=None):
         """
             @type host: string
             @param host: 访问的url，例如：http://$accountid.mns.cn-hangzhou.aliyuncs.com

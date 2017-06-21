@@ -53,7 +53,7 @@ class MNSHTTPConnection(HTTPConnection):
 
 class MNSHTTPSConnection(HTTPSConnection):
     def __init__(self, host, port=None, strict=None):
-        HTTPSConnection.__init__(self, host, port, strict=strict)
+        HTTPSConnection.__init__(self, host, port, strict)
         self.request_length = 0
 
     def send(self, str):

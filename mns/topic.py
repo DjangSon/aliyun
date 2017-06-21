@@ -8,14 +8,15 @@
 #THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import time
-from mns_client import MNSClient
-from mns_request import *
-from mns_exception import *
-from subscription import *
+from mns.mns_client import MNSClient
+from mns.mns_request import *
+from mns.mns_exception import *
+from mns.subscription import *
 try:
     import json
-except ImportError,e:
+except ImportError as e:
     import simplejson as json
+
 
 class Topic:
     def __init__(self, topic_name, mns_client, debug=False):
@@ -136,14 +137,15 @@ class Topic:
             :: MNSClientNetworkException    网络异常
             :: MNSServerException           mns处理异常
         """
-        req = PublishMessageRequest(self.topic_name, message.message_body, message.message_tag, message.direct_mail, message.direct_sms)
+        req = PublishMessageRequest(self.topic_name, message.message_body, message.message_tag, message.direct_mail,
+                                    message.direct_sms)
         req.set_req_info(req_info)
         resp = PublishMessageResponse()
         self.mns_client.publish_message(req, resp)
         self.debuginfo(resp)
         return self.__publish_resp2msg__(resp)
 
-    def list_subscription(self, prefix = "", ret_number = -1, marker = "", req_info=None):
+    def list_subscription(self, prefix="", ret_number=-1, marker="", req_info=None):
         """ 列出该主题的订阅
 
             @type prefix: string
@@ -175,9 +177,9 @@ class Topic:
 
     def debuginfo(self, resp):
         if self.debug:
-            print "===================DEBUG INFO==================="
-            print "RequestId: %s" % resp.header["x-mns-request-id"]
-            print "================================================"
+            print("===================DEBUG INFO===================")
+            print("RequestId: %s" % resp.header["x-mns-request-id"])
+            print("================================================")
 
     def __resp2meta__(self, topic_meta, resp):
         topic_meta.message_count = resp.message_count
@@ -194,8 +196,9 @@ class Topic:
         msg.message_body_md5 = resp.message_body_md5
         return msg
 
+
 class TopicMeta:
-    def __init__(self, maximum_message_size = -1, logging_enabled = None):
+    def __init__(self, maximum_message_size=-1, logging_enabled=None):
         """ 主题属性
             @note：设置属性
             :: maximum_message_size: message body的最大长度，单位：Byte
@@ -231,10 +234,11 @@ class TopicMeta:
                      "LastModifyTime": time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(self.last_modify_time)),
                      "TopicName": self.topic_name,
                      "LoggingEnabled": self.logging_enabled}
-        return "\n".join(["%s: %s" % (k.ljust(30),v) for k,v in meta_info.items()])
+        return "\n".join(["%s: %s" % (k.ljust(30), v) for k, v in meta_info.items()])
+
 
 class TopicMessage:
-    def __init__(self, message_body = "", message_tag = "", direct_mail = None, direct_sms = None):
+    def __init__(self, message_body="", message_tag="", direct_mail=None, direct_sms=None):
         """ Specify information of TopicMessage
 
             @note: publish_message params
@@ -260,6 +264,7 @@ class TopicMessage:
 
     def set_message_tag(self, message_tag):
         self.message_tag = message_tag
+
 
 class DirectMailInfo:
     def __init__(self, account_name, subject, address_type, is_html, reply_to_address):
@@ -290,11 +295,12 @@ class DirectMailInfo:
         self.reply_to_address = reply_to_address
 
     def get(self):
-        return {"AccountName": self.account_name, \
-                "Subject": self.subject, \
-                "AddressType": self.address_type, \
-                "IsHtml": self.is_html,\
+        return {"AccountName": self.account_name,
+                "Subject": self.subject,
+                "AddressType": self.address_type,
+                "IsHtml": self.is_html,
                 "ReplyToAddress": self.reply_to_address}
+
 
 class DirectSMSInfo:
     SINGLE_CONTENT = "singleContent"
@@ -341,9 +347,11 @@ class DirectSMSInfo:
         self.sms_params = params
 
     def get(self):
-        info = {"FreeSignName": self.free_sign_name,\
-                "TemplateCode": self.template_code,\
-                "Type": self.type,\
-                "Receiver": ','.join(self.receivers),\
-                "SmsParams": json.dumps(self.sms_params)}
+        info = {
+            "SmsParams": json.dumps(self.sms_params),
+            "TemplateCode": self.template_code,
+            "Type": self.type,
+            "FreeSignName": self.free_sign_name,
+            "Receiver": ','.join(self.receivers),
+        }
         return info

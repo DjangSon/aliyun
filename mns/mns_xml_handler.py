@@ -9,7 +9,7 @@
 
 import xml.dom.minidom
 import base64
-import types
+import re
 from mns.mns_exception import *
 from mns.mns_request import *
 from xml.etree import ElementTree
@@ -49,10 +49,10 @@ class EncoderBase:
         rootNode.attributes["xmlns"] = XMLNS
         doc.appendChild(rootNode)
         if data_dic:
-            for k,v in data_dic.items():
+            for k, v in data_dic.items():
                 keyNode = doc.createElement(k)
-                if type(v) is types.DictType:
-                    for subkey,subv in v.items():
+                if isinstance(v, dict):
+                    for subkey, subv in v.items():
                         subNode = doc.createElement(subkey)
                         subNode.appendChild(doc.createTextNode(subv))
                         keyNode.appendChild(subNode)
@@ -78,7 +78,7 @@ class EncoderBase:
                     nullNode = doc.createTextNode("")
                     secNode.appendChild(nullNode)
                     continue
-                for k,v in subData.items():
+                for k, v in subData.items():
                     keyNode = doc.createElement(k)
                     secNode.appendChild(keyNode)
                     keyNode.appendChild(doc.createTextNode(v))
@@ -121,11 +121,11 @@ class MessageEncoder(EncoderBase):
         message = {}
         if data.base64encode:
             # base64 only support str
-            tmpbody = data.message_body.encode('utf-8') if isinstance(data.message_body, unicode) else data.message_body
+            tmpbody = data.message_body.encode('utf-8')
             msgbody = base64.b64encode(tmpbody)
         else:
             # xml only support unicode when contains Chinese
-            msgbody = data.message_body.decode('utf-8') if isinstance(data.message_body, str) else data.message_body
+            msgbody = data.message_body if isinstance(data.message_body, str) else data.message_body
         EncoderBase.insert_if_valid("MessageBody", msgbody, "", message)
         EncoderBase.insert_if_valid("DelaySeconds", str(data.delay_seconds), "-1", message)
         EncoderBase.insert_if_valid("Priority", str(data.priority), "-1", message)
@@ -140,11 +140,11 @@ class MessagesEncoder:
             item = {}
             if base64encode:
                 # base64 only support str
-                tmpbody = msg.message_body.encode('utf-8') if isinstance(msg.message_body, unicode) else msg.message_body
+                tmpbody = msg.message_body.encode('utf-8')
                 msgbody = base64.b64encode(tmpbody)
             else:
                 # xml only support unicode when contains Chinese
-                msgbody = msg.message_body.decode('utf-8') if isinstance(msg.message_body, str) else msg.message_body
+                msgbody = msg.message_body if isinstance(msg.message_body, str) else msg.message_body
             EncoderBase.insert_if_valid("MessageBody", msgbody, "", item)
             EncoderBase.insert_if_valid("DelaySeconds", str(msg.delay_seconds), "-1", item)
             EncoderBase.insert_if_valid("Priority", str(msg.priority), "-1", item)
@@ -157,16 +157,18 @@ class TopicMessageEncoder:
     def encode(req):
         message = {}
         # xml only support unicode when contains Chinese
-        msgbody = req.message_body.decode('utf-8') if isinstance(req.message_body, str) else req.message_body
+        msgbody = req.message_body if isinstance(req.message_body, str) else req.message_body
         EncoderBase.insert_if_valid("MessageBody", msgbody, "", message)
         EncoderBase.insert_if_valid("MessageTag", req.message_tag, "", message)
         msg_attr = {}
+        pattern = re.compile(r'\\\\')
         if req.direct_mail is not None:
             msg_attr["DirectMail"] = json.dumps(req.direct_mail.get())
         if req.direct_sms is not None:
             msg_attr["DirectSMS"] = json.dumps(req.direct_sms.get())
         if msg_attr != {}:
-            message["MessageAttributes"] = msg_attr
+            message["MessageAttributes"] = pattern.sub(r'\\', msg_attr["DirectSMS"])
+        print(message)
         return EncoderBase.dic_to_xml("Message", message)
 
 
@@ -188,6 +190,7 @@ class TopicEncoder(EncoderBase):
         EncoderBase.insert_if_valid("MaximumMessageSize", str(data.maximum_message_size), "-1", topic)
         EncoderBase.insert_if_valid("LoggingEnabled", logging_enabled, "None", topic)
         return EncoderBase.dic_to_xml("Topic", topic)
+
 
 class SubscriptionEncoder(EncoderBase):
     @staticmethod
@@ -215,7 +218,8 @@ class DecoderBase:
 
         nodelist = dom.getElementsByTagName(tag_name)
         if not nodelist:
-            raise MNSClientNetworkException("RespDataDamaged", "No element with tag name '%s'.\nData:%s" % (tag_name, xml_data))
+            raise MNSClientNetworkException("RespDataDamaged", "No element with tag name '%s'.\nData:%s"
+                                            % (tag_name, xml_data))
 
         return nodelist[0].childNodes
 
@@ -263,7 +267,7 @@ class ListQueueDecoder(DecoderBase):
                     for node in queue:
                         nodename = node.tag[len(namespace):]
                         nodevalue = node.text.strip()
-                        if nodename == "QueueURL" and len(nodevalue) > 0 :
+                        if nodename == "QueueURL" and len(nodevalue) > 0:
                             queueurl_list.append(nodevalue)
                         if len(nodevalue) > 0:
                             queuemeta[nodename] = nodevalue
@@ -286,7 +290,7 @@ class GetAccountAttrDecoder(DecoderBase):
         DecoderBase.xml_to_dic("Account", xml_data, data_dic)
         key_list = ["LoggingBucket"]
         for key in key_list:
-            if not data_dic.has_key(key):
+            if not data_dic. has_key(key):
                 raise MNSClientNetworkException("RespDataDamaged", xml_data, req_id)
         return data_dic
 
@@ -407,7 +411,8 @@ class PeekMessageDecoder(DecoderBase):
     def decode(xml_data, base64decode, req_id=None):
         data_dic = {}
         DecoderBase.xml_to_dic("Message", xml_data, data_dic, req_id)
-        key_list = ["DequeueCount", "EnqueueTime", "FirstDequeueTime", "MessageBody", "MessageId", "MessageBodyMD5", "Priority"]
+        key_list = ["DequeueCount", "EnqueueTime", "FirstDequeueTime",
+                    "MessageBody", "MessageId", "MessageBodyMD5", "Priority"]
         for key in key_list:
             if key not in data_dic.keys():
                 raise MNSClientNetworkException("RespDataDamaged", xml_data, req_id)
@@ -513,7 +518,8 @@ class GetTopicAttrDecoder(DecoderBase):
     def decode(xml_data, req_id=None):
         data_dic = {}
         DecoderBase.xml_to_dic("Topic", xml_data, data_dic, req_id)
-        key_list = ["MessageCount", "CreateTime", "LastModifyTime", "MaximumMessageSize", "MessageRetentionPeriod", "TopicName", "LoggingEnabled"]
+        key_list = ["MessageCount", "CreateTime", "LastModifyTime", "MaximumMessageSize",
+                    "MessageRetentionPeriod", "TopicName", "LoggingEnabled"]
         for key in key_list:
             if key not in data_dic.keys():
                 raise MNSClientNetworkException("RespDataDamaged", xml_data, req_id)
@@ -563,7 +569,8 @@ class GetSubscriptionAttrDecoder(DecoderBase):
     def decode(xml_data, req_id=None):
         data_dic = {}
         DecoderBase.xml_to_dic("Subscription", xml_data, data_dic, req_id)
-        key_list = ["TopicOwner", "TopicName", "SubscriptionName", "Endpoint", "NotifyStrategy", "NotifyContentFormat", "CreateTime", "LastModifyTime"]
+        key_list = ["TopicOwner", "TopicName", "SubscriptionName", "Endpoint",
+                    "NotifyStrategy", "NotifyContentFormat", "CreateTime", "LastModifyTime"]
         for key in key_list:
             if key not in data_dic.keys():
                 raise MNSClientNetworkException("RespDataDamaged", xml_data, req_id)

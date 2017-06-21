@@ -22,6 +22,7 @@ import hmac
 import base64
 import platform
 import mns.pkg_info
+import re
 from mns.mns_xml_handler import *
 from mns.mns_exception import *
 from mns.mns_request import *
@@ -310,7 +311,7 @@ class MNSClient:
         BatchReceiveMessageValidator.validate(req)
 
         # make request internal
-        req_url =  "/%s/%s/%s?numOfMessages=%s" % (URISEC_QUEUE, req.queue_name, URISEC_MESSAGE, req.batch_size)
+        req_url = "/%s/%s/%s?numOfMessages=%s" % (URISEC_QUEUE, req.queue_name, URISEC_MESSAGE, req.batch_size)
         if req.wait_seconds != -1:
             req_url += "&waitseconds=%s" % req.wait_seconds
 
@@ -355,8 +356,8 @@ class MNSClient:
         resp.header = resp_inter.header
         self.check_status(req_inter, resp_inter, resp)
         if self.logger:
-            self.logger.info("DeleteMessage RequestId:%s QueueName:%s ReceiptHandle:%s" % \
-                (resp.get_requestid(), req.queue_name, req.receipt_handle))
+            self.logger.info("DeleteMessage RequestId:%s QueueName:%s ReceiptHandle:%s" %
+                             (resp.get_requestid(), req.queue_name, req.receipt_handle))
 
     def batch_delete_message(self, req, resp):
         # check parameter
@@ -375,8 +376,8 @@ class MNSClient:
         resp.header = resp_inter.header
         self.check_status(req_inter, resp_inter, resp, BatchDeleteMessageDecoder)
         if self.logger:
-            self.logger.info("BatchDeleteMessage RequestId:%s QueueName:%s ReceiptHandles\n%s" % \
-                (resp.get_requestid(), req.queue_name, "\n".join(req.receipt_handle_list)))
+            self.logger.info("BatchDeleteMessage RequestId:%s QueueName:%s ReceiptHandles\n%s" %
+                             (resp.get_requestid(), req.queue_name, "\n".join(req.receipt_handle_list)))
 
     def peek_message(self, req, resp):
         # check parameter
@@ -555,7 +556,7 @@ class MNSClient:
         # check parameter
         GetTopicAttrValidator.validate(req)
 
-        #make request internal
+        # make request internal
         req_inter = RequestInternal(req.method, "/%s/%s" % (URISEC_TOPIC, req.topic_name))
         self.build_header(req, req_inter)
 
@@ -583,9 +584,14 @@ class MNSClient:
         PublishMessageValidator.validate(req)
 
         # make request internal
-        req_inter = RequestInternal(req.method, uri = "/%s/%s/%s" % (URISEC_TOPIC, req.topic_name, URISEC_MESSAGE))
+        req_inter = RequestInternal(req.method, uri="/%s/%s/%s" % (URISEC_TOPIC, req.topic_name, URISEC_MESSAGE))
+        # pattern = re.compile(r'\\')
+        # req_inter.data = pattern.sub(r'', TopicMessageEncoder.encode(req).decode()).encode('utf-8')
         req_inter.data = TopicMessageEncoder.encode(req)
+        print(req_inter.data)
         self.build_header(req, req_inter)
+
+        print(req_inter.data)
 
         # send request
         resp_inter = self.http.send_request(req_inter)
@@ -597,8 +603,8 @@ class MNSClient:
         if resp.error_data == "":
             resp.message_id, resp.message_body_md5 = PublishMessageDecoder.decode(resp_inter.data, req_inter.get_req_id())
             if self.logger:
-                self.logger.info("PublishMessage RequestId:%s TopicName:%s MessageId:%s MessageBodyMD5:%s" % \
-                    (resp.get_requestid(), req.topic_name, resp.message_id, resp.message_body_md5))
+                self.logger.info("PublishMessage RequestId:%s TopicName:%s MessageId:%s MessageBodyMD5:%s" %
+                                 (resp.get_requestid(), req.topic_name, resp.message_id, resp.message_body_md5))
 
     def subscribe(self, req, resp):
         # check parameter
@@ -693,15 +699,16 @@ class MNSClient:
         resp.header = resp_inter.header
         self.check_status(req_inter, resp_inter, resp)
         if self.logger:
-            self.logger.info("SetSubscriptionAttributes RequestId:%s TopicName:%s SubscriptionName:%s" % \
-                (resp.get_requestid(), req.topic_name, req.subscription_name))
+            self.logger.info("SetSubscriptionAttributes RequestId:%s TopicName:%s SubscriptionName:%s" %
+                             (resp.get_requestid(), req.topic_name, req.subscription_name))
 
     def get_subscription_attributes(self, req, resp):
         # check parameter
         GetSubscriptionAttrValidator.validate(req)
 
         # make request internal
-        req_inter = RequestInternal(req.method, "/%s/%s/%s/%s" % (URISEC_TOPIC, req.topic_name, URISEC_SUBSCRIPTION, req.subscription_name))
+        req_inter = RequestInternal(req.method, "/%s/%s/%s/%s" % (URISEC_TOPIC, req.topic_name, URISEC_SUBSCRIPTION,
+                                                                  req.subscription_name))
         self.build_header(req, req_inter)
 
         # send request
@@ -731,23 +738,23 @@ class MNSClient:
 # ----------------------internal-------------------------------------------------------------------#
     def build_header(self, req, req_inter):
         if req.request_id is not None:
-            req_inter.header["x-mns-user-request-id"] = req.request_id
+            req_inter.header['x-mns-user-request-id'] = req.request_id
         if self.http.is_keep_alive():
-            req_inter.header["Connection"] = "Keep-Alive"
-        if req_inter.data != "":
-            req_inter.header["content-md5"] = base64.b64encode(hashlib.md5(req_inter.data).hexdigest())
-            req_inter.header["content-type"] = "text/xml;charset=UTF-8"
+            req_inter.header['Connection'] = 'Keep-Alive'
+        if req_inter.data != '':
+            req_inter.header['content-md5'] = base64.b64encode(bytes(hashlib.md5(req_inter.data).hexdigest(), 'utf-8'))
+            req_inter.header['content-type'] = 'text/xml;charset=UTF-8'
         req_inter.header["x-mns-version"] = self.version
         req_inter.header["host"] = self.host
         req_inter.header["date"] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
         req_inter.header["user-agent"] = "aliyun-sdk-python/%s(%s/%s;%s)" % (mns.pkg_info.version, platform.system(),
                                                                              platform.release(),
                                                                              platform.python_version())
-        req_inter.header["Authorization"] = self.get_signature(req_inter.method, req_inter.header, req_inter.uri)
+        req_inter.header['Authorization'] = self.get_signature(req_inter.method, req_inter.header, req_inter.uri)
         if self.security_token != "":
             req_inter.header["security-token"] = self.security_token
 
-    def get_signature(self,method,headers,resource):
+    def get_signature(self, method, headers, resource):
         content_md5 = self.get_element('content-md5', headers)
         content_type = self.get_element('content-type', headers)
         date = self.get_element('date', headers)
@@ -755,17 +762,17 @@ class MNSClient:
         canonicalized_mns_headers = ""
         if len(headers) > 0:
             x_header_list = headers.keys()
-            x_header_list.sort()
+            x_header_list = sorted(x_header_list)
             for k in x_header_list:
                 if k.startswith('x-mns-'):
                     canonicalized_mns_headers += k + ":" + headers[k] + "\n"
         string_to_sign = "%s\n%s\n%s\n%s\n%s%s" % (method, content_md5, content_type,
                                                    date, canonicalized_mns_headers, canonicalized_resource)
         # hmac only support str in python2.7
-        tmp_key = self.access_key.encode('utf-8') if isinstance(self.access_key, unicode) else self.access_key
-        h = hmac.new(tmp_key, string_to_sign, hashlib.sha1)
+        tmp_key = self.access_key.encode('utf-8')
+        h = hmac.new(tmp_key, string_to_sign.encode('utf-8'), hashlib.sha1)
         signature = base64.b64encode(h.digest())
-        signature = "MNS " + self.access_id + ":" + signature
+        signature = 'MNS ' + self.access_id + ':' + signature.decode()
         return signature
 
     def get_element(self, name, container):
@@ -775,7 +782,7 @@ class MNSClient:
             return ""
 
     def check_status(self, req_inter, resp_inter, resp, decoder=ErrorDecoder):
-        if resp_inter.status >= 200 and resp_inter.status < 400:
+        if (resp_inter.status >= 200) and (resp_inter.status < 400):
             resp.error_data = ""
         else:
             resp.error_data = resp_inter.data
@@ -810,12 +817,12 @@ class MNSClient:
     def process_host(self, host):
         if host.startswith("http://"):
             if host.endswith("/"):
-                host =  host[:-1]
+                host = host[:-1]
             host = host[len("http://"):]
             return host, False
         elif host.startswith("https://"):
             if host.endswith("/"):
-                host =  host[:-1]
+                host = host[:-1]
             host = host[len("https://"):]
             return host, True
         else:

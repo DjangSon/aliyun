@@ -17,22 +17,23 @@ msg_body1 = "sms-message1."
 '''
 Step 3. 生成SMS消息属性，single=False表示每个接收者参数不一样，
 '''
-# 3.1 设置SMSSignName和SMSTempateCode
-direct_sms_attr1 = DirectSMSInfo(free_sign_name="宁师生活网", template_code="SMS_69460049", single=False)
+# 3.1 设置SMSSignName和SMSTemplateCode
+direct_sms_attr1 = DirectSMSInfo(free_sign_name='宁师生活网', template_code='SMS_69460049', single=False)
 # 3.2 指定接收短信的手机号并指定发送给该接收人的短信中的参数值（在短信模板中定义的）
-direct_sms_attr1.add_receiver(receiver="18150850025", params={"code": "123456"})
+direct_sms_attr1.add_receiver(receiver='18150850025', params={'code': '123456'})
 '''
 #Step 5. 生成SMS消息对象
 '''
 msg1 = TopicMessage(msg_body1, direct_sms=direct_sms_attr1)
+print(direct_sms_attr1.sms_params)
 try:
     '''
     Step 6. 发布SMS消息
     '''
     re_msg = my_topic.publish_message(msg1)
-    print "Publish Message Succeed. MessageBody:%s MessageID:%s" % (msg_body1, re_msg.message_id)
-except MNSExceptionBase, e:
+    print("Publish Message Succeed. MessageBody:%s MessageID:%s" % (msg_body1, re_msg.message_id))
+except MNSExceptionBase as e:
     if e.type == "TopicNotExist":
-        print "Topic not exist, please create it."
+        print("Topic not exist, please create it.")
         sys.exit(1)
-    print "Publish Message Fail. Exception:%s" % e
+    print("Publish Message Fail. Exception:%s" % e)

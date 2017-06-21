@@ -8,9 +8,9 @@
 #THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import time
-from mns_client import MNSClient
-from mns_request import *
-from mns_exception import *
+from mns.mns_client import MNSClient
+from mns.mns_request import *
+from mns.mns_exception import *
 
 class Subscription:
     def __init__(self, topic_name, subscription_name, mns_client, debug=False):
@@ -114,9 +114,9 @@ class Subscription:
 
     def debuginfo(self, resp):
         if self.debug:
-            print "===================DEBUG INFO==================="
-            print "RequestId: %s" % resp.header["x-mns-request-id"]
-            print "================================================"
+            print("===================DEBUG INFO===================")
+            print("RequestId: %s" % resp.header["x-mns-request-id"])
+            print("================================================")
 
     def __resp2meta__(self, subscription_meta, resp):
         subscription_meta.topic_owner = resp.topic_owner
@@ -129,8 +129,9 @@ class Subscription:
         subscription_meta.create_time = resp.create_time
         subscription_meta.last_modify_time = resp.last_modify_time
 
+
 class SubscriptionMeta:
-    def __init__(self, endpoint = "", notify_strategy = "", notify_content_format = "", filter_tag = ""):
+    def __init__(self, endpoint="", notify_strategy="", notify_content_format="", filter_tag=""):
         """ Subscription属性
             @note: 设置属性
             :: endpoint: 接收端地址, HttpEndpoint, MailEndpoint or QueueEndpoint
@@ -178,11 +179,13 @@ class SubscriptionMeta:
                      "NotifyContentFormat": self.notify_content_format,
                      "CreateTime": time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(self.create_time)),
                      "LastModifyTime": time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(self.last_modify_time))}
-        return "\n".join(["%s: %s" % (k.ljust(30),v) for k,v in meta_info.items()])
+        return "\n".join(["%s: %s" % (k.ljust(30), v) for k, v in meta_info.items()])
+
 
 class SubscriptionNotifyStrategy:
     BACKOFF = "BACKOFF_RETRY"
     EXPONENTIAL = "EXPONENTIAL_DECAY_RETRY"
+
 
 class SubscriptionNotifyContentFormat:
     XML = "XML"

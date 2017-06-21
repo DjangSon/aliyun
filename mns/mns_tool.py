@@ -389,7 +389,9 @@ class SubscriptionValidator(TopicValidator):
     @staticmethod
     def filter_tag_validate(filter_tag, req_id):
         if len(filter_tag) > 16:
-            raise MNSClientParameterException("FilterTagInvalid", "Bad value: '%s', The length of filter tag should be between 1 and 16." % (filter_tag))
+            raise MNSClientParameterException("FilterTagInvalid",
+                                              "Bad value: '%s', The length of filter tag should be between 1 and 16."
+                                              % filter_tag)
 
 
 class SubscribeValidator(SubscriptionValidator):
